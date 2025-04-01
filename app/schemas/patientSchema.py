@@ -2,10 +2,7 @@ from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel
 
-class LegalCaregiverOrGuardian(BaseModel):
-    data_provider_caregiver_id: str
-    relationship_to_patient: Optional[str] = None
-    caregiver_mdm_id: Optional[str] = None
+class PatientSchema(BaseModel):
     first_name: str
     last_name: str
     birth_date: date
@@ -14,6 +11,5 @@ class LegalCaregiverOrGuardian(BaseModel):
     name_prefix_code: Optional[str] = None
     name_suffix_code: Optional[str] = None
     middle_name: Optional[str] = None
-
-    class Config:
-        orm_mode = True
+    mdm_id: str
+    is_active: Optional[bool] = True

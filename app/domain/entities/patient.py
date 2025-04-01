@@ -3,7 +3,6 @@ from typing import Optional
 from pydantic import BaseModel
 
 class Patient(BaseModel):
-    row_id: int  # FK to Event.row_id
     first_name: str
     last_name: str
     birth_date: date
@@ -14,7 +13,6 @@ class Patient(BaseModel):
     middle_name: Optional[str] = None
     mdm_id: str
     is_active: Optional[bool] = True
-    created_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True

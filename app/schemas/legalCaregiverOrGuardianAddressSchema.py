@@ -10,6 +10,3 @@ class LegalCaregiverOrGuardianAddress(BaseModel):
     country_code: Optional[str] = None
     postal_code: Optional[str] = None
     enriched_indicator: Optional[str] = None
-
-    class Config:
-        orm_mode = True
