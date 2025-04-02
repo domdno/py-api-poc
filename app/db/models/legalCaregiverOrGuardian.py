@@ -2,9 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, DateTime,
     ForeignKey, func, Date
 )
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from app.db.base import Base
 
 class LegalCaregiverOrGuardian(Base):
     __tablename__ = 'legal_caregiver_or_guardian'

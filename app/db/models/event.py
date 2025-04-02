@@ -2,9 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, DateTime,
     UniqueConstraint
 )
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from app.db.base import Base
 
 class Event(Base):
     __tablename__ = 'event'

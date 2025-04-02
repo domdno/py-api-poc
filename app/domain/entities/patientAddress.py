@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
+from dataclasses import dataclass
 
+@dataclass
 class PatientAddress(BaseModel):
     address_line1: str
     address_line2: Optional[str] = None

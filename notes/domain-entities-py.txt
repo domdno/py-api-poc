@@ -1,0 +1,204 @@
+#domain\entities\consent.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class Consent(BaseModel):
+    name: str
+    status: str
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\consentPreference.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class ConsentPreference(BaseModel):
+    name: str
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\consentPreferenceOption.py
+from datetime import datetime, date
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class ConsentPreferencesOption(BaseModel):
+    selected_option: str
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\enrollmentEvent.py
+from datetime import datetime, date
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class EnrollmentEvent(BaseModel):
+    data_provider_transaction_id: str
+    data_provider_id: str
+    data_provider_patient_id: str
+    marketing_campaign_source_code: Optional[str] = None
+    enrollment_date: Optional[date] = None
+    applicant_type: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\event.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class Event(BaseModel):
+    event_type: str
+    version: str
+    created_timestamp: datetime
+    request_id: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\legalCaregiverOrGuardian.py
+from datetime import datetime, date
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class LegalCaregiverOrGuardian(BaseModel):
+    data_provider_caregiver_id: str
+    relationship_to_patient: Optional[str] = None
+    caregiver_mdm_id: Optional[str] = None
+    first_name: str
+    last_name: str
+    birth_date: date
+    gender: Optional[str] = None
+    preferred_language_code: Optional[str] = None
+    name_prefix_code: Optional[str] = None
+    name_suffix_code: Optional[str] = None
+    middle_name: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\legalCaregiverOrGuardianAddress.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class LegalCaregiverOrGuardianAddress(BaseModel):
+    address_line1: Optional[str] = None
+    address_line2: Optional[str] = None
+    city: Optional[str] = None
+    state_or_province_code: Optional[str] = None
+    country_code: Optional[str] = None
+    postal_code: Optional[str] = None
+    enriched_indicator: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\legalCaregiverOrGuardianCommunication.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class LegalCaregiverOrGuardianCommunication(BaseModel):
+    value: str
+    type: str
+    is_primary: Optional[bool] = None
+    status: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\patient.py
+from datetime import datetime, date
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class Patient(BaseModel):
+    first_name: str
+    last_name: str
+    birth_date: date
+    gender: Optional[str] = None
+    preferred_language_code: Optional[str] = None
+    name_prefix_code: Optional[str] = None
+    name_suffix_code: Optional[str] = None
+    middle_name: Optional[str] = None
+    mdm_id: str
+    is_active: Optional[bool] = True
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\patientAddress.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class PatientAddress(BaseModel):
+    address_line1: str
+    address_line2: Optional[str] = None
+    city: str
+    state_or_province_code: str
+    country_code: str
+    postal_code: str
+    enriched_indicator: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\patientAlternateContact.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class PatientAlternateContact(BaseModel):
+    full_name: str
+    relationship_to_patient: str
+    phone_number: Optional[str] = None
+    email_address: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+#domain\entities\patientCommunication.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+from dataclasses import dataclass
+
+@dataclass
+class PatientCommunication(BaseModel):
+    value: str
+    type: str
+    is_primary: Optional[bool] = None
+    status: Optional[str] = None
+
+    class Config:
+        orm_mode = True

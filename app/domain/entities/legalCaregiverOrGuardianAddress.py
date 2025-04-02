@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
+from dataclasses import dataclass
 
+@dataclass
 class LegalCaregiverOrGuardianAddress(BaseModel):
     address_line1: Optional[str] = None
     address_line2: Optional[str] = None

@@ -2,12 +2,10 @@ from sqlalchemy import (
     Column, Integer, String, DateTime,
     ForeignKey, func
 )
-from sqlalchemy.ext.declarative import declarative_base
+from app.db.base import Base
 
-Base = declarative_base()
-
-class ConsentPreferencesOption(Base):
-    __tablename__ = 'consent_preferences_option'
+class ConsentPreferenceOption(Base):
+    __tablename__ = 'consent_preference_option'
     __table_args__ = {'schema': 'bronze'}
 
     row_id = Column(Integer, primary_key=True, autoincrement=True)
