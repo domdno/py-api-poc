@@ -1,0 +1,94 @@
+{
+    "eventType": "zongertinib.enrollment.created",
+    "data": {
+      "patient": {
+        "firstName": "string",
+        "lastName": "string",
+        "birthDate": "2025-04-01",
+        "gender": "male",
+        "preferredLanguageCode": "st",
+        "namePrefixCode": "MR",
+        "nameSuffixCode": "II",
+        "middleName": "Junior",
+        "communications": [
+          {
+            "type": "homePhone",
+            "isPrimary": true,
+            "status": "active",
+            "number": "7818626087"
+          },
+          {
+            "type": "email",
+            "isPrimary": true,
+            "status": "active",
+            "address": "individual@example.com"
+          }
+        ],
+        "addressLine1": "874 Massachusetts Avenue",
+        "addressLine2": "string",
+        "city": "Lexington",
+        "stateOrProvinceCode": "MA",
+        "countryCode": "US",
+        "postalCode": "02420-5303",
+        "legalCaregiverOrGuardian": {
+          "dataProviderCaregiverId": "string",
+          "relationshipToPatient": "carePartner",
+          "firstName": "string",
+          "lastName": "string",
+          "birthDate": "2025-04-01",
+          "gender": "male",
+          "preferredLanguageCode": "st",
+          "namePrefixCode": "MR",
+          "nameSuffixCode": "II",
+          "middleName": "Junior",
+          "communications": [
+            {
+              "type": "homePhone",
+              "isPrimary": true,
+              "status": "active",
+              "number": "7818626087"
+            },
+            {
+              "type": "email",
+              "isPrimary": true,
+              "status": "active",
+              "address": "individual@example.com"
+            }
+          ],
+          "addressLine1": "874 Massachusetts Avenue",
+          "addressLine2": "string",
+          "city": "Lexington",
+          "stateOrProvinceCode": "MA",
+          "countryCode": "US",
+          "postalCode": "02420-5303"
+        },
+        "alternateContact": {
+          "fullName": "string",
+          "relationshipToPatient": "string",
+          "phoneNumber": "148673015913633",
+          "emailAddress": "user@example.com"
+        }
+      },
+      "consentsAndPreferences": [
+        {
+          "name": "Patient Support Program Communications",
+          "status": "optOut",
+          "preferences": [
+            {
+              "name": "bestContactTime",
+              "selectedOptions": [
+                "morning"
+              ]
+            }
+          ]
+        }
+      ],
+      "marketingCampaignSourceCode": "string",
+      "dataProviderId": "string",
+      "dataProviderPatientId": "string",
+      "dataProviderTransactionId": "string"
+    },
+    "version": "1.0",
+    "createdTimestamp": "2025-04-01T19:26:13.869Z",
+    "requestId": "1d93f893-d28e-4fff-afc3-0ae8ad403c59"
+  }

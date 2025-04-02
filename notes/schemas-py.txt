@@ -1,0 +1,183 @@
+#schemas\brandEnrollmentCreatedSchema.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, Field
+
+from schemas import BrandEnrollmentDataSchema
+
+class brandEnrollmentCreatedSchema(BaseModel):
+    event_type: str = Field(..., alias="eventType")
+    version: str
+    created_timestamp: datetime = Field(..., alias="createdTimestamp")
+    request_id: Optional[str] = Field(..., alias="requestId")
+    data: BrandEnrollmentDataSchema
+
+#schemas\brandEnrollmentDataSchema.py
+from datetime import datetime, date
+from typing import Optional, List
+from pydantic import BaseModel, Field
+
+from schemas import PatientSchema, ConsentSchema
+
+class BrandEnrollmentDataSchema(BaseModel):
+    patient: PatientSchema
+    consent: List[ConsentSchema]
+    data_provider_transaction_id: str = Field(..., alias="dataProviderTransactionId")
+    data_provider_id: str = Field(..., alias="dataProviderId")
+    data_provider_patient_id: str = Field(..., alias="dataProviderPatientId")
+    marketing_campaign_source_code: Optional[str] = Field(..., alias="marketingCampaignSourceCode", default=None)
+    enrollment_date: Optional[date] = Field(..., alias="enrollmentDate", default=None)
+    applicant_type: Optional[str] = Field(..., alias="applicantType", default=None)
+
+#schemas\consentSchema.py
+from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel
+
+from schemas import ConsentPreferenceSchema
+
+class ConsentSchema(BaseModel):
+    name: str
+    status: str
+    preferences: Optional[List[ConsentPreferenceSchema]]
+
+#schemas\consentPreferenceSchema.py
+from datetime import datetime
+from pydantic import BaseModel, Field
+
+from schemas import ConsentPreferenceOptionSchema
+
+class ConsentPreferenceSchema(BaseModel):
+    name: str
+    selected_options: ConsentPreferenceOptionSchema = Field(..., alias="selectedOptions")
+
+#schemas\consentPreferenceOptionSchema.py
+from datetime import datetime, date
+from typing import Optional
+from pydantic import BaseModel
+
+class ConsentPreferencesOptionSchema(BaseModel):
+    selected_option: str
+
+#schemas\legalCaregiverOrGuardianSchema.py
+from datetime import datetime, date
+from typing import Optional, List
+from pydantic import BaseModel, Field
+
+from schemas import (
+    LegalCaregiverOrGuardianAddressSchema,
+    LegalCaregiverOrGuardianCommunicationSchema
+)
+
+class LegalCaregiverOrGuardianSchema(BaseModel):
+    data_provider_caregiver_id: str = Field(..., alias="dataProviderCaregiverId")
+    relationship_to_patient: Optional[str] = Field(..., alias="relationshipToPatient", default=None)
+    caregiver_mdm_id: Optional[str] = Field(..., alias="caregiverMDMId", default=None)
+    first_name: str = Field(..., alias="firstName")
+    last_name: str = Field(..., alias="lastName")
+    birth_date: date = Field(..., alias="birthDate")
+    gender: Optional[str] = None
+    preferred_language_code: Optional[str] = Field(..., alias="preferredLanguageCode", default=None)
+    name_prefix_code: Optional[str] = Field(..., alias="namePrefixCode", default=None)
+    name_suffix_code: Optional[str] = Field(..., alias="nameSuffixCode", default=None)
+    middle_name: Optional[str] = Field(..., alias="middleName", default=None)
+    address_line1: str = Field(..., alias="addressLine1")
+    address_line2: Optional[str] = Field(..., alias="addressLine2", default=None)
+    city: str
+    state_or_province_code: str = Field(..., alias="stateOrProvinceCode")
+    country_code: str = Field(..., alias="countryCode")
+    postal_code: str = Field(..., alias="postalCode")
+    enriched_indicator: Optional[str] = Field(..., alias="enrichedIndicator", default=None)
+    communications: List[LegalCaregiverOrGuardianCommunicationSchema]
+
+#schemas\legalCaregiverOrGuardianCommunicationSchema.py
+from typing import Optional
+from pydantic import BaseModel, Field, model_validator
+
+class LegalCaregiverOrGuardianCommunicationSchema(BaseModel):
+    value: str
+    type: str
+    is_primary: Optional[bool] = Field(..., alias="isPrimary", default=True)
+    status: Optional[str] = None
+
+    """
+    We use model_validator to take either "number" or "address" from the JSON
+        object and store it as "value"
+    """
+    @model_validator(mode="before")
+    def unify_value_field(cls, values):
+        if "number" in values:
+            values["value"] = values.pop("number")
+        elif "address" in values:
+            values["value"] = values.pop("address")
+        else:
+            raise ValueError("Communication must include either 'number' or 'address'")
+        return values
+
+#schemas\patientSchema.py
+from datetime import datetime, date
+from typing import Optional, List
+from pydantic import BaseModel, Field
+
+from schemas import (
+    PatientCommunicationSchema,
+    PatientAlternateContactSchema,
+    LegalCaregiverOrGuardianSchema
+)
+
+class PatientSchema(BaseModel):
+    first_name: str = Field(..., alias="firstName")
+    last_name: str = Field(..., alias="lastName")
+    birth_date: date = Field(..., alias="birthDate")
+    gender: Optional[str] = None
+    preferred_language_code: Optional[str] = Field(..., alias="preferredLanguageCode", default=None)
+    name_prefix_code: Optional[str] = Field(..., alias="namePrefixCode", default=None)
+    name_suffix_code: Optional[str] = Field(..., alias="nameSuffixCode", default=None)
+    middle_name: Optional[str] = Field(..., alias="middleName", default=None)
+    mdm_id: str = Field(..., alias="id")
+    is_active: Optional[bool] = Field(..., alias="isActive", default=True)
+    address_line1: str = Field(..., alias="addressLine1")
+    address_line2: Optional[str] = Field(..., alias="addressLine2", default=None)
+    city: str
+    state_or_province_code: str = Field(..., alias="stateOrProvinceCode")
+    country_code: str = Field(..., alias="countryCode")
+    postal_code: str = Field(..., alias="postalCode")
+    enriched_indicator: Optional[str] = Field(..., alias="enrichedIndicator", default=None)
+    communications: List[PatientCommunicationSchema]
+    alternate_contact: Optional[PatientAlternateContactSchema] = None
+    legal_caregiver_or_guardian: Optional[LegalCaregiverOrGuardianSchema] = None
+
+#schemas\patientAlternateContactSchema.py
+from typing import Optional
+from pydantic import BaseModel, Field
+
+class PatientAlternateContactSchema(BaseModel):
+    full_name: str = Field(..., alias="fullName")
+    relationship_to_patient: str = Field(..., alias="relationshipToPatient")
+    phone_number: Optional[str] = Field(..., alias="phoneNumber", default=None)
+    email_address: Optional[str] = Field(..., alias="emailAddress", default=None)
+
+#schemas\patientCommunicationSchema.py
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, Field, model_validator
+
+class PatientCommunicationSchema(BaseModel):
+    value: str
+    type: str
+    is_primary: Optional[bool] = Field(..., alias="isPrimary", default=True)
+    status: Optional[str] = None
+
+    """
+    We use model_validator to take either "number" or "address" from the JSON
+        object and store it as "value"
+    """
+    @model_validator(mode="before")
+    def unify_value_field(cls, values):
+        if "number" in values:
+            values["value"] = values.pop("number")
+        elif "address" in values:
+            values["value"] = values.pop("address")
+        else:
+            raise ValueError("Communication must include either 'number' or 'address'")
+        return values
