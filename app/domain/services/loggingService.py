@@ -1,3 +1,4 @@
+import json
 from app.db.database import get_db
 from typing import Any
 from app.db.models.apiRequestResponse import ApiRequestResponse
@@ -9,8 +10,8 @@ def log_db_upload(request_data: dict[str, Any], response_data: dict[str, Any]):
 
     try:
         apiRequestResponse = ApiRequestResponse(
-            request_data=request_data,
-            response_data=response_data
+            request_data=json.dumps(request_data),
+            response_data=json.dumps(response_data)
         )
         db.add(apiRequestResponse)
         db.commit()
