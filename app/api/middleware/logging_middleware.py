@@ -33,13 +33,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 "body": res_body.decode("utf-8"),
             }
 
-            db = next(get_db())
-
             task = BackgroundTask(
                 log_db_upload,
                 request_data,
-                response_data,
-                db
+                response_data
             )
 
             return Response(
