@@ -1,0 +1,583 @@
+DROP SCHEMA bronze CASCADE;
+
+CREATE SCHEMA IF NOT EXISTS bronze;
+
+-- Event table
+/*
+ * Use event surrogate key to link tables
+ * Cannot use enrollment as other event types will not have entries in that table
+ * 
+ * This is the only common object for every event type
+ * 
+ * UNIQUE contraint ensures we only process a given event once
+ */
+
+CREATE TABLE IF NOT EXISTS event(
+	row_id SERIAL PRIMARY KEY,
+	event_type VARCHAR(50) NOT NULL,
+	version VARCHAR(255) NOT NULL,
+	created_timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+	request_id VARCHAR(255),
+	UNIQUE (event_type, VERSION, created_timestamp, request_id)
+);
+
+-- Enrollment Event table
+/*
+ * 1:1 with event
+ * 
+ * used for brand.enrollment.created and brand.enrollment.updated
+ * 
+ * NOTE: we have different event type tables because it seems that
+ * 	each event has a different set of required fields (like
+ * 	data_provider_transaction_id)
+ */
+CREATE TABLE IF NOT EXISTS enrollment_event (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    data_provider_transaction_id VARCHAR(255) NOT NULL,
+    data_provider_id VARCHAR(50) NOT NULL,
+    data_provider_patient_id VARCHAR(255) NOT NULL,
+    marketing_campaign_source_code VARCHAR(255),
+    enrollment_date DATE,
+    applicant_type VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Pace Event table
+/*
+ * 1:1 with event
+ * 
+ * used for brand.pace.updated
+ * 
+ * application logic to ensure we only accept event if patient_id in patient table (mdm_id)
+ */
+CREATE TABLE IF NOT EXISTS pace_event(
+	row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+	data_provider_id VARCHAR(50) NOT NULL,
+    data_provider_patient_id VARCHAR(255) NOT NULL,
+    patient_id CHAR(14) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Consent Update Event table
+/*
+ * 1:1 with event
+ * 
+ * used for patient.consents.updated
+ * 
+ * application logic to ensure we only accept event if individual_id in patient table (mdm_id)
+ */
+CREATE TABLE IF NOT EXISTS consent_event(
+	row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+	data_provider_id VARCHAR(50) NOT NULL,
+    data_provider_patient_id VARCHAR(255) NOT NULL,
+    patient_id CHAR(14) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Patient table
+/*
+ * 1:1 with event
+ * 
+ * is_active set to true by default for enrollment events
+ * 	added column because not sure best way to handle
+ * 	delete and merge/unmerge
+ * 
+ * added created_at to every table, but specifically patient
+ * 	to make it easier to pull latest patient record without having to
+ * 	join on event (may be unessecary/wrong, have regretted not adding
+ *  this column in past)
+ */
+CREATE TABLE IF NOT EXISTS patient (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    birth_date DATE NOT NULL,
+    gender VARCHAR(255),
+    preferred_language_code CHAR(2),
+    name_prefix_code VARCHAR(50),
+    name_suffix_code VARCHAR(50),
+    middle_name VARCHAR(50),
+    mdm_id CHAR(14) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Patient Address table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS patient_address (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    address_line1 VARCHAR(50) NOT NULL,
+    address_line2 VARCHAR(50),
+    city VARCHAR(50) NOT NULL,
+    state_or_province_code VARCHAR(3) NOT NULL,
+    country_code CHAR(2) NOT NULL,
+    postal_code VARCHAR(10) NOT NULL,
+    enriched_indicator VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Patient Communications table
+/*
+ * 1:many with event
+ */
+CREATE TABLE IF NOT EXISTS patient_communication (
+    row_id INTEGER REFERENCES event(row_id),
+    value VARCHAR(100) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    is_primary BOOLEAN,
+    status VARCHAR(50),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (row_id, value)
+);
+
+-- Patient Alternate Contact table
+/*
+ * 1:1 with event 
+ */
+CREATE TABLE IF NOT EXISTS patient_alternate_contact (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    relationship_to_patient VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(15),
+    email_address VARCHAR(100),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Legal Caregiver Or Guardian table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS legal_caregiver_or_guardian (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    data_provider_caregiver_id VARCHAR(30) NOT NULL,
+    relationship_to_patient VARCHAR(50),
+    caregiver_mdm_id CHAR(14),    
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    birth_date DATE NOT NULL,
+    gender VARCHAR(255),
+    preferred_language_code CHAR(2),
+    name_prefix_code VARCHAR(50),
+    name_suffix_code VARCHAR(50),
+    middle_name VARCHAR(50),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Legal Caregiver Or Guardian Address table
+/*
+ * 1:1 with legal caregiver or guardian
+ */
+CREATE TABLE IF NOT EXISTS legal_caregiver_or_guardian_address (
+    row_id INTEGER REFERENCES legal_caregiver_or_guardian(row_id) PRIMARY KEY,
+    address_line1 VARCHAR(255),
+    address_line2 VARCHAR(255),
+    city VARCHAR(255),
+    state_or_province_code VARCHAR(255),
+    country_code VARCHAR(255),
+    postal_code VARCHAR(255),
+    enriched_indicator VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Legal Caregiver Or Guardian Communications table
+/*
+ * 1:many with legal caregiver or guardian
+ */
+CREATE TABLE IF NOT EXISTS legal_caregiver_or_guardian_communication (
+    row_id INTEGER REFERENCES legal_caregiver_or_guardian(row_id),
+    value VARCHAR(100) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    is_primary BOOLEAN,
+    status VARCHAR(50),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (row_id, value)
+);
+
+-- Consent table
+/*
+ * 1:many with event
+ */
+CREATE TABLE IF NOT EXISTS consent (
+	row_id SERIAL PRIMARY KEY,
+    patient_row_id INTEGER REFERENCES event(row_id),
+    name VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Consent Preferences table
+/*
+ * 1:many with consent
+ */
+CREATE TABLE IF NOT EXISTS consent_preference (
+	row_id SERIAL PRIMARY KEY,
+    consent_row_id INTEGER REFERENCES consent(row_id),
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Consent Preferences Options table
+/*
+ * 1:many with consent preferences
+ */
+CREATE TABLE IF NOT EXISTS consent_preference_option (
+	row_id SERIAL PRIMARY KEY,
+	consent_preference_row_id INTEGER REFERENCES consent_preference(row_id),
+	selected_option VARCHAR(100) NOT NULL,
+	created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Clinical Details table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS clinical_detail (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    icd_code VARCHAR(20),
+    indication VARCHAR(255),
+    diagnosis_date DATE,
+    concomitant_medications VARCHAR(255),
+    brand_adherence VARCHAR(255),
+    last_dose_date DATE,
+    therapy_start_date DATE,
+    support_persons_number INTEGER,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Prior Treatment table
+/*
+ * 1:many with clinical detail
+ */
+CREATE TABLE IF NOT EXISTS prior_treatment (
+	row_id SERIAL PRIMARY KEY,
+	clinical_detail_row_id INTEGER REFERENCES clinical_detail(row_id),
+	treatment VARCHAR(255),
+	created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Drug Allergy table
+/*
+ * 1:many with clinical detail
+ */
+CREATE TABLE IF NOT EXISTS drug_allergy (
+	row_id SERIAL PRIMARY KEY,
+	clinical_detail_row_id INTEGER REFERENCES clinical_detail(row_id),
+	allergy VARCHAR(50),
+	created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Prescription table
+/*
+ * 1:1 with clinical detail
+ */
+CREATE TABLE IF NOT EXISTS prescription (
+    row_id INTEGER REFERENCES clinical_detail(row_id) PRIMARY KEY,
+    drug_name VARCHAR(100) NOT NULL,
+    drug_group VARCHAR(100),
+    drug_form VARCHAR(255),
+    drug_strength VARCHAR(255),
+    medication_tier VARCHAR(255),
+    dispense_as_written VARCHAR(255),
+    signature_date DATE,
+    quantity INTEGER,
+    refills INTEGER,
+    add_ons VARCHAR(255),
+    specialty_pharmacy_name VARCHAR(255),
+    specialty_pharmacy_triage_date TIMESTAMP WITHOUT TIME ZONE,
+    status VARCHAR(255),
+    ship_to VARCHAR(255),
+    shipped_date DATE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insurance Plan table
+/*
+ * 1:many with event
+ */
+CREATE TABLE IF NOT EXISTS insurance_plan (
+	row_id SERIAL PRIMARY KEY,
+    patient_row_id INTEGER REFERENCES event(row_id),
+    plan_type VARCHAR(50) NOT NULL,
+    plan_name VARCHAR(255),
+    rx_bin VARCHAR(50),
+    rx_pcn VARCHAR(50),
+    group_number VARCHAR(50),
+    member_id VARCHAR(50),
+    provider VARCHAR(255),
+    provider_phone_number VARCHAR(15),
+    provider_payer_type VARCHAR(255),
+    policyholder_name VARCHAR(100),
+    policyholder_birth_date DATE,
+    medication_tier VARCHAR(255),
+    coinsurance_percentage VARCHAR(255),
+    insurance_hierarchy VARCHAR(255),
+    individual_deductible VARCHAR(255),
+    family_deductible VARCHAR(255),
+    max_out_of_pocket_total VARCHAR(255),
+    specialty_pharmacy_required VARCHAR(255),
+    specialty_pharmacy_preferred VARCHAR(255),
+    specialty_pharmacy_npi VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insurance Type table
+/*
+ * 1:many with event
+ */
+CREATE TABLE IF NOT EXISTS insurance_type (
+	row_id SERIAL PRIMARY KEY,
+	patient_row_id INTEGER REFERENCES event(row_id),
+	type VARCHAR(255),
+	created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Prescribing HCP table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS prescribing_hcp (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    practice_name VARCHAR(100) NOT NULL,
+    medical_speciality VARCHAR(255) NOT NULL,
+    national_provider_identifier VARCHAR(30),
+    medical_license_number VARCHAR(30),
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Prescribing HCP Phone table
+/*
+ * 1:many with precribing HCP
+ */
+CREATE TABLE IF NOT EXISTS prescribing_hcp_phone (
+    row_id SERIAL PRIMARY KEY,
+	prescribing_hcp_row_id INTEGER REFERENCES prescribing_hcp(row_id),
+    type VARCHAR(255) NOT NULL,
+    is_primary BOOLEAN,
+    status VARCHAR(50),
+    number VARCHAR(15),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Prescribing HCP Office Contact table
+/*
+ * 1:1 with precribing HCP
+ */
+CREATE TABLE IF NOT EXISTS prescribing_hcp_office_contact (
+    row_id INTEGER REFERENCES prescribing_hcp(row_id) PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    email_address VARCHAR(100),
+    direct_phone_number VARCHAR(30),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Prescribing HCP Address table
+/*
+ * 1:1 with prescribing HCP
+ */
+CREATE TABLE IF NOT EXISTS prescribing_hcp_office_address (
+    row_id INTEGER REFERENCES prescribing_hcp(row_id) PRIMARY KEY,
+    address_line1 VARCHAR(50) NOT NULL,
+    address_line2 VARCHAR(50),
+    city VARCHAR(50) NOT NULL,
+    state_or_province_code VARCHAR(3) NOT NULL,
+    country_code CHAR(2) NOT NULL,
+    postal_code VARCHAR(10) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Primary HCP table
+/*
+ * 1:1 with patient
+ */
+CREATE TABLE IF NOT EXISTS primary_hcp (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    practice_name VARCHAR(255) NOT NULL,
+    medical_speciality VARCHAR(255),
+    national_provider_identifier VARCHAR(255),
+    medical_license_number INTEGER,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Primary HCP Phone table
+/*
+ * 1:many with primary HCP
+ */
+CREATE TABLE IF NOT EXISTS primary_hcp_phone (
+	row_id SERIAL PRIMARY KEY,    
+	primary_hcp_row_id INTEGER REFERENCES primary_hcp(row_id),
+    type VARCHAR(50) NOT NULL,
+    is_primary BOOLEAN,
+    status VARCHAR(50),
+    number VARCHAR(15),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Primary HCP Address table
+/*
+ * 1:1 with primary HCP
+ */
+CREATE TABLE IF NOT EXISTS primary_hcp_office_address (
+    row_id INTEGER REFERENCES primary_hcp(row_id) PRIMARY KEY,
+    address_line1 VARCHAR(50) NOT NULL,
+    address_line2 VARCHAR(50),
+    city VARCHAR(50) NOT NULL,
+    state_or_province_code VARCHAR(3) NOT NULL,
+    country_code CHAR(2) NOT NULL,
+    postal_code VARCHAR(10) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+ );
+
+-- Generic Service Subscription table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS generic_subscription_basic (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    service_type VARCHAR(255) NOT NULL,
+    subscription_status VARCHAR(255) NOT NULL,
+    subscription_date DATE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Case Management Service table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS case_management_service (
+	row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    service_type VARCHAR(255) NOT NULL,
+    subscription_status VARCHAR(255),
+    subscription_date DATE,
+    case_id VARCHAR(255) NOT NULL,
+    case_status VARCHAR(255),
+    patient_journey_status VARCHAR(255),
+    welcome_call_date TIMESTAMP WITHOUT TIME ZONE,
+    patient_navigator_name VARCHAR(255),
+    benefits_verification_status VARCHAR(255),
+    prior_authorization_status VARCHAR(255),
+    prior_authorization_required VARCHAR(255),
+    prior_authorization_expired_date DATE,
+    prior_authorization_identifier VARCHAR(255),
+    appeal_id VARCHAR(255),
+    appealed_prior_authorization_id VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Supply Service table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS supply_service (
+	row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    service_type VARCHAR(255) NOT NULL,
+    subscription_status VARCHAR(255),
+    subscription_date DATE,
+    fulfillment_order_id VARCHAR(255) NOT NULL,
+    order_status VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Copay Service table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS copay_service (
+	row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    service_type VARCHAR(255) NOT NULL,
+    subscription_status VARCHAR(255) NOT NULL,
+    subscription_date DATE,
+    registration_system_mode VARCHAR(255),
+    rx_member_id VARCHAR(50) NOT NULL,
+    copay_card_status VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Patient Education Service table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS patient_education_service (
+	row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+	service_type VARCHAR(255) NOT NULL,
+    subscription_status VARCHAR(255),
+    subscription_date DATE,
+    territory_code VARCHAR(255) NOT NULL,
+    delivery_preference VARCHAR(255),
+    injection_type VARCHAR(255),
+    biologic_history VARCHAR(255),
+    additional_injection_education_request_date DATE,
+    health_care_practicioner_education_request VARCHAR(255),
+    prescribing_hcp_hipaa_consent_date DATE,
+    communication_type VARCHAR(255),
+    communication_topic VARCHAR(255),
+    communication_preferred_channel VARCHAR(255),
+    best_contact_time_preference VARCHAR(255),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Patient Education Service Education Type table
+/*
+ * 1:many with patient education service
+ */
+CREATE TABLE IF NOT EXISTS patient_education_service_education_type (
+	row_id SERIAL PRIMARY KEY,
+	patient_education_service_row_id INTEGER REFERENCES patient_education_service(row_id),
+	TYPE VARCHAR(255),
+	created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Rx Bridge Service table
+/*
+ * 1:1 with event
+ */
+CREATE TABLE IF NOT EXISTS rx_bridge_service (
+    row_id INTEGER REFERENCES event(row_id) PRIMARY KEY,
+    service_type VARCHAR(255) NOT NULL,
+    subscription_status VARCHAR(255),
+    subscription_date DATE,
+    bridge_status VARCHAR(255),
+    triage_date TIMESTAMP WITHOUT TIME ZONE,
+    intake_date TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Rx Bridge Service Prescription table
+/*
+ * 1:1 with Rx bridge service
+ */
+CREATE TABLE IF NOT EXISTS rx_bridge_service_prescription (
+    row_id INTEGER REFERENCES rx_bridge_service(row_id) PRIMARY KEY,
+    drug_name VARCHAR(100) NOT NULL,
+    drug_group VARCHAR(100),
+    drug_form VARCHAR(255),
+    drug_strength VARCHAR(255),
+    medication_tier VARCHAR(255),
+    dispense_as_written VARCHAR(255),
+    signature_date DATE,
+    quantity INTEGER,
+    refills INTEGER,
+    add_ons VARCHAR(255),
+    specialty_pharmacy_name VARCHAR(255),
+    specialty_pharmacy_triage_date TIMESTAMP WITHOUT TIME ZONE,
+    status VARCHAR(255),
+    ship_to VARCHAR(255),
+    shipped_date DATE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- log table
+CREATE TABLE IF NOT EXISTS api_request_response (
+    row_id SERIAL PRIMARY KEY,
+    request_timestamp TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    request_body JSONB,
+    response_body JSONB
+)
