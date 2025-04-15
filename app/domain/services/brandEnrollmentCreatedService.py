@@ -3,47 +3,33 @@ from app.schemas.brandEnrollmentCreatedSchema import BrandEnrollmentCreatedSchem
 from app.db.models.consent import Consent
 from app.db.models.consentPreference import ConsentPreference
 from app.db.models.consentPreferenceOption import ConsentPreferenceOption
-from app.db.models.enrollmentEvent import EnrollmentEvent
-from app.db.models.event import Event
 from app.db.models.legalCaregiverOrGuardian import LegalCaregiverOrGuardian
 from app.db.models.legalCaregiverOrGuardianAddress import LegalCaregiverOrGuardianAddress
 from app.db.models.legalCaregiverOrGuardianCommunication import LegalCaregiverOrGuardianCommunication
-from app.db.models.patient import Patient
 from app.db.models.patientAddress import PatientAddress
 from app.db.models.patientAlternateContact import PatientAlternateContact
 from app.db.models.patientCommunication import PatientCommunication
 
+from app.mappers.eventMapper import schema_to_event_entity, event_entity_to_db_model
+from app.mappers.patientMapper import schema_to_patient_entity, patient_entity_to_db_model
+
 def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
     """
-    This is how we map to the db
-    First we need to insert the event to get the row_id to be used in the
-        other tables
+    1. Map payload to entity using Mapper
+    2. Save entity using Repo
     """
-    event = Event(
-        event_type=payload.event_type,
-        version=payload.version,
-        created_timestamp=payload.created_timestamp,
-        request_id=payload.request_id
-    )
+
+    event_entity = schema_to_event_entity(payload)
+    event = event_entity_to_db_model(event_entity)
+    # TODO: add Repo to handle DB interaction
     db.add(event)
     db.flush() # using flush() allows us to use row_id from the table
 
     # TODO: add enrollment_event mapping
-
     patient_data = payload.data.patient
-    patient = Patient(
-        row_id=event.row_id,  # use event.row_id as the FK
-        first_name=patient_data.first_name,
-        last_name=patient_data.last_name,
-        birth_date=patient_data.birth_date,
-        gender=patient_data.gender,
-        preferred_language_code=patient_data.preferred_language_code,
-        name_prefix_code=patient_data.name_prefix_code,
-        name_suffix_code=patient_data.name_suffix_code,
-        middle_name=patient_data.middle_name,
-        mdm_id=patient_data.mdm_id,
-        is_active=patient_data.is_active
-    )
+    patient_entity = schema_to_patient_entity(patient_data)
+    patient = patient_entity_to_db_model(patient_entity, event.row_id)
+    # TODO: add Repo to handle DB interaction
     db.add(patient)
     db.flush()  # get patient.row_id
 

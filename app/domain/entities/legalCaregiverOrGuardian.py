@@ -1,9 +1,7 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional
 from pydantic import BaseModel
-from dataclasses import dataclass
 
-@dataclass
 class LegalCaregiverOrGuardian(BaseModel):
     data_provider_caregiver_id: str
     relationship_to_patient: Optional[str] = None

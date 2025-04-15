@@ -1,9 +1,7 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional
 from pydantic import BaseModel
-from dataclasses import dataclass
 
-@dataclass
 class Patient(BaseModel):
     first_name: str
     last_name: str

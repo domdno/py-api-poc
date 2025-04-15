@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
@@ -27,3 +27,6 @@ class PatientSchema(BaseModel):
     communications: List[PatientCommunicationSchema]
     alternate_contact: Optional[PatientAlternateContactSchema] = None
     legal_caregiver_or_guardian: Optional[LegalCaregiverOrGuardianSchema] = None
+
+    class Config:
+        allow_population_by_field_name = True 
