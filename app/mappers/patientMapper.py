@@ -3,7 +3,7 @@ from app.domain.entities.patient import Patient as PatientEntity
 
 # Schema -> Entity
 def schema_to_patient_entity(payload) -> PatientEntity:
-    entity_data = payload.dict(by_alias=False)
+    entity_data = payload.model_dump(by_alias=False)
     return PatientEntity(**entity_data)
 
 # Entity -> DB Model

@@ -8,4 +8,4 @@ class PatientAlternateContact(BaseModel):
     email_address: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

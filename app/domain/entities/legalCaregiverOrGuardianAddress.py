@@ -11,4 +11,4 @@ class LegalCaregiverOrGuardianAddress(BaseModel):
     enriched_indicator: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
