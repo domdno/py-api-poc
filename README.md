@@ -22,5 +22,5 @@ uvicorn app.main:app --host 0.0.0.0 --port 8080
 To run as a container, please execute the following:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
