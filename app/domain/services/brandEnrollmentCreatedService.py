@@ -13,25 +13,26 @@ from app.db.models.patientCommunication import PatientCommunication
 from app.mappers.eventMapper import schema_to_event_entity, event_entity_to_db_model
 from app.mappers.patientMapper import schema_to_patient_entity, patient_entity_to_db_model
 
+from app.repositories.eventRepository import save_event
+from app.repositories.patientRepository import save_patient
+
 def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
     """
     1. Map payload to entity using Mapper
-    2. Save entity using Repo
+    2. Map entity to DB model using Mapper
+    2. Save DB model using Repo
     """
 
     event_entity = schema_to_event_entity(payload)
-    event = event_entity_to_db_model(event_entity)
-    # TODO: add Repo to handle DB interaction
-    db.add(event)
-    db.flush() # using flush() allows us to use row_id from the table
+    event_model = event_entity_to_db_model(event_entity)
+    event = save_event(event_model, db)
 
     # TODO: add enrollment_event mapping
+
     patient_data = payload.data.patient
     patient_entity = schema_to_patient_entity(patient_data)
-    patient = patient_entity_to_db_model(patient_entity, event.row_id)
-    # TODO: add Repo to handle DB interaction
-    db.add(patient)
-    db.flush()  # get patient.row_id
+    patient_model = patient_entity_to_db_model(patient_entity, event.row_id)
+    patient = save_patient(patient_model, db)
 
     """
     This is how we handle nesting
