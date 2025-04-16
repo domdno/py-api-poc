@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.patient import Patient
 
-def save_patient(patient: Patient, db: Session) -> Patient:
+async def save_patient(patient: Patient, db: AsyncSession) -> Patient:
     db.add(patient)
-    db.flush() # get patient.row_id
+    await db.flush() # get patient.row_id
     return patient
