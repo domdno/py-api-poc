@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.event import Event
 
-def save_event(event: Event, db: Session) -> Event:
+async def save_event(event: Event, db: AsyncSession) -> Event:
     db.add(event)
-    db.flush() # get event.row_id
+    await db.flush() # get event.row_id
     return event

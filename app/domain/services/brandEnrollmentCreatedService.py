@@ -1,5 +1,7 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.schemas.brandEnrollmentCreatedSchema import BrandEnrollmentCreatedSchema
+
 from app.db.models.consent import Consent
 from app.db.models.consentPreference import ConsentPreference
 from app.db.models.consentPreferenceOption import ConsentPreferenceOption
@@ -16,7 +18,7 @@ from app.mappers.patientMapper import schema_to_patient_entity, patient_entity_t
 from app.repositories.eventRepository import save_event
 from app.repositories.patientRepository import save_patient
 
-def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
+async def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: AsyncSession):
     """
     1. Map payload to entity using Mapper
     2. Map entity to DB model using Mapper
@@ -25,14 +27,14 @@ def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
 
     event_entity = schema_to_event_entity(payload)
     event_model = event_entity_to_db_model(event_entity)
-    event = save_event(event_model, db)
+    event = await save_event(event_model, db)
 
     # TODO: add enrollment_event mapping
 
     patient_data = payload.data.patient
     patient_entity = schema_to_patient_entity(patient_data)
     patient_model = patient_entity_to_db_model(patient_entity, event.row_id)
-    patient = save_patient(patient_model, db)
+    patient = await save_patient(patient_model, db)
 
     """
     This is how we handle nesting
@@ -116,7 +118,7 @@ def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
             status=consent_data.status
         )
         db.add(consent)
-        db.flush()  # flush to get consent.row_id
+        await db.flush()  # flush to get consent.row_id
 
         if consent_data.preferences:
             for pref_data in consent_data.preferences:
@@ -125,7 +127,7 @@ def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
                     name=pref_data.name
                 )
                 db.add(preference)
-                db.flush()  # flush to get preference.row_id
+                await db.flush()  # flush to get preference.row_id
 
                 for option in pref_data.selected_options:
                     option_obj = ConsentPreferenceOption(
@@ -135,7 +137,7 @@ def create_enrollment(payload: BrandEnrollmentCreatedSchema, db: Session):
                     db.add(option_obj)
 
     # commit only if all inserts are successful
-    db.commit()
+    await db.commit()
     
     # Return the same payload as confirmation
     return payload

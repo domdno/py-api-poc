@@ -1,7 +1,6 @@
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.background import BackgroundTask
-from app.db.database import get_db
 from app.domain.services.loggingService import log_db_upload
 import logging
 

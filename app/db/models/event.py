@@ -14,5 +14,5 @@ class Event(Base):
     row_id = Column(Integer, primary_key=True, autoincrement=True)
     event_type = Column(String(50), nullable=False)
     version = Column(String(255), nullable=False)
-    created_timestamp = Column(DateTime, nullable=False)
+    created_timestamp = Column(DateTime(timezone=True), nullable=False)
     request_id = Column(String(255))
