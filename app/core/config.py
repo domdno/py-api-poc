@@ -14,3 +14,6 @@ DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{D
 
 # logging config
 LOG_TABLE = os.getenv("LOG_TABLE")
+
+# endpoints
+V1_BRAND_ENROLLMENT_CREATED = "/v1/brand/enrollment/created/"
